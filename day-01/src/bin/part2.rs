@@ -4,9 +4,11 @@ fn main() {
 }
 
 fn get_two_digit_from_line(calibration_val: &str) -> u8 {
-    let calibration_val: String = calibration_val.chars().collect::<Vec<char>>()
+    let calibration_val: String = calibration_val
+        .chars()
+        .collect::<Vec<char>>()
         .windows(5.min(calibration_val.len()))
-        .map(|w| rewrite_words_to_nums(w.iter().collect::<String>()))
+        .map(|w| w.iter().collect::<String>().rewrite_words_to_nums())
         .collect::<Vec<String>>()
         .concat();
 
@@ -20,16 +22,21 @@ fn get_two_digit_from_line(calibration_val: &str) -> u8 {
     (first * 10 + last) as u8
 }
 
-fn rewrite_words_to_nums(inp: String) -> String {
-    inp.replace("one", "1")
-        .replace("two", "2")
-        .replace("three", "3")
-        .replace("four", "4")
-        .replace("five", "5")
-        .replace("six", "6")
-        .replace("seven", "7")
-        .replace("eight", "8")
-        .replace("nine", "9")
+trait RewriteWords {
+    fn rewrite_words_to_nums(&self) -> String;
+}
+impl RewriteWords for String {
+    fn rewrite_words_to_nums(&self) -> String {
+        self.replace("one", "1")
+            .replace("two", "2")
+            .replace("three", "3")
+            .replace("four", "4")
+            .replace("five", "5")
+            .replace("six", "6")
+            .replace("seven", "7")
+            .replace("eight", "8")
+            .replace("nine", "9")
+    }
 }
 
 fn get_calibration_sum(calibration_script: &str) -> usize {
