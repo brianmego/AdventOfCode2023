@@ -198,20 +198,5 @@ mod tests {
         assert_eq!(actual.symbols.len(), 6);
     }
 
-    #[test]
-    fn test_get_valid_parts() {
-        let inp = include_str!("../../data/sample_input.txt");
-        let schematic = parse_engine_schematic(inp).unwrap().1;
-        let actual = schematic.get_valid_parts();
-        assert_eq!(actual.len(), 8);
-    }
 
-    #[test]
-    fn test_get_gears() {
-        let inp = include_str!("../../data/sample_input.txt");
-        let schematic = parse_engine_schematic(inp).unwrap().1;
-        let actual = schematic.get_gears();
-        dbg!(&actual);
-        assert_eq!(actual.len(), 2);
-    }
 }

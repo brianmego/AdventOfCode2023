@@ -78,4 +78,13 @@ mod tests {
         let actual = sum_of_gear_ratios(&schematic);
         assert_eq!(actual, 467835);
     }
+
+    #[test]
+    fn test_get_gears() {
+        let inp = include_str!("../data/sample_input.txt");
+        let schematic = parse_engine_schematic(inp).unwrap().1;
+        let actual = schematic.get_gears();
+        dbg!(&actual);
+        assert_eq!(actual.len(), 2);
+    }
 }
