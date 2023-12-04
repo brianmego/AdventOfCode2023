@@ -2,6 +2,10 @@ build DAY:
     cd day-{{DAY}} && \
     cargo build
 
+release DAY:
+    cd day-{{DAY}} && \
+    cargo build --release
+
 run DAY PART:
     cd day-{{DAY}} && \
     cargo run --bin part{{PART}}
