@@ -2,15 +2,16 @@ use nom::{
     bytes::complete::tag,
     character::complete::{digit1, newline},
     multi::{many0, many1},
-    sequence::{delimited, terminated, tuple, separated_pair},
+    sequence::{delimited, separated_pair, terminated, tuple},
     IResult,
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Card {
     id: u32,
     winning_set: Vec<u32>,
     your_set: Vec<u32>,
+    has_calculated_duplicates: bool,
 }
 
 impl Card {
@@ -19,11 +20,35 @@ impl Card {
             id,
             winning_set,
             your_set,
+            has_calculated_duplicates: false,
         }
     }
     pub fn score(&self) -> u32 {
-        let winning_numbers = self.your_set.iter().filter(|n| self.winning_set.contains(n)).count();
+        let winning_numbers = self
+            .your_set
+            .iter()
+            .filter(|n| self.winning_set.contains(n))
+            .count();
         2_u32.pow(winning_numbers as u32) / 2
+    }
+
+    pub fn winning_numbers_count(&self) -> usize {
+        self.your_set
+            .iter()
+            .filter(|n| self.winning_set.contains(n))
+            .count()
+    }
+
+    pub fn id(&self) -> u32 {
+        self.id
+    }
+
+    pub fn already_calculated_duplicates(&self) -> bool {
+        self.has_calculated_duplicates
+    }
+
+    pub fn set_has_calculated_duplicates(&mut self) {
+        self.has_calculated_duplicates = true;
     }
 }
 
@@ -33,8 +58,8 @@ pub fn parse_card_set(inp: &str) -> IResult<&str, Vec<Card>> {
 
 /// parses 'Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53'
 fn parse_card(inp: &str) -> IResult<&str, Card> {
-    let (inp, (card_id, (winning_set, your_set))) =
-        tuple((delimited(terminated(tag("Card"), many1(tag(" "))), digit1, tag(":")),
+    let (inp, (card_id, (winning_set, your_set))) = tuple((
+        delimited(terminated(tag("Card"), many1(tag(" "))), digit1, tag(":")),
         separated_pair(parse_number_set, tag("|"), parse_number_set),
     ))(inp)?;
     let card_id = card_id.parse::<u32>().unwrap();
@@ -43,7 +68,8 @@ fn parse_card(inp: &str) -> IResult<&str, Card> {
 
 /// parses '41 48 83 86 17 | 83 86  6 31 17  9 48 53'
 fn parse_number_set(inp: &str) -> IResult<&str, Vec<u32>> {
-    let (inp, number_set): (&str, Vec<&str>) = many1(delimited(many0(tag(" ")), digit1, many0(tag(" "))))(inp)?;
+    let (inp, number_set): (&str, Vec<&str>) =
+        many1(delimited(many0(tag(" ")), digit1, many0(tag(" "))))(inp)?;
     let number_set = number_set
         .iter()
         .map(|n| n.parse::<u32>().unwrap())
