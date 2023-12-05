@@ -9,21 +9,20 @@ fn main() {
 }
 
 fn add_all_duplicates(inp: &mut Vec<Card>) {
+    let mut start_idx = 0;
     loop {
         let mut cards_to_add = vec![];
         let vec_copy = inp.clone();
 
-        let need_dup_check = inp.iter().filter(|card| !card.already_calculated_duplicates()).count();
-        // dbg!(need_dup_check);
-        if need_dup_check == 0 {
+        let (_, unchecked) = inp.split_at(start_idx);
+        start_idx = inp.len();
+        if unchecked.is_empty() {
             break;
         }
-        let _: Vec<_> = inp
-            .iter_mut()
-            .filter(|card| !card.already_calculated_duplicates())
+        let _: Vec<_> = unchecked
+            .iter()
             .map(|card| {
                 let id = card.id() as usize;
-                card.set_has_calculated_duplicates();
                 let winning_numbers_count = card.winning_numbers_count();
                 for i in id..=id + winning_numbers_count - 1 {
                     let card_to_copy = vec_copy.get(i).unwrap();
@@ -35,7 +34,6 @@ fn add_all_duplicates(inp: &mut Vec<Card>) {
             .iter()
             .map(|card| inp.push(card.clone()))
             .collect();
-        // dbg!(i, &inp);
     }
 }
 

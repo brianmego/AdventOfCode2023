@@ -6,31 +6,25 @@ use nom::{
     IResult,
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Card {
     id: u32,
     winning_set: Vec<u32>,
     your_set: Vec<u32>,
-    has_calculated_duplicates: bool,
+    winning_numbers_count: usize,
 }
 
-impl Clone for Card {
-    fn clone(&self) -> Self {
-        Self {
-            id: self.id.clone(),
-            winning_set: self.winning_set.clone(),
-            your_set: self.your_set.clone(),
-            has_calculated_duplicates: false,
-        }
-    }
-}
 impl Card {
     fn new(id: u32, winning_set: Vec<u32>, your_set: Vec<u32>) -> Self {
+        let winning_numbers_count = your_set
+            .iter()
+            .filter(|n| winning_set.contains(n))
+            .count();
         Self {
             id,
             winning_set,
             your_set,
-            has_calculated_duplicates: false,
+            winning_numbers_count
         }
     }
     pub fn score(&self) -> u32 {
@@ -43,23 +37,13 @@ impl Card {
     }
 
     pub fn winning_numbers_count(&self) -> usize {
-        self.your_set
-            .iter()
-            .filter(|n| self.winning_set.contains(n))
-            .count()
+        self.winning_numbers_count
     }
 
     pub fn id(&self) -> u32 {
         self.id
     }
 
-    pub fn already_calculated_duplicates(&self) -> bool {
-        self.has_calculated_duplicates
-    }
-
-    pub fn set_has_calculated_duplicates(&mut self) {
-        self.has_calculated_duplicates = true;
-    }
 }
 
 pub fn parse_card_set(inp: &str) -> IResult<&str, Vec<Card>> {
