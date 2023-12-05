@@ -1,32 +1,42 @@
 mod shared;
 use shared::{parse_card_set, Card};
 
-fn main() {}
-
-fn add_all_duplicates(inp: Vec<Card>) -> Vec<Card> {
-    let new_inp: Vec<Card> = inp
-        .into_iter()
-        .filter(|card| !card.already_calculated_duplicates())
-        .collect();
-    let new_inp = calculate_duplicates(new_inp, &inp);
-    // match new_inp.is_empty() {
-    //     true => new_inp,
-    //     false => {
-
-    //         add_all_duplicates(new_inp);
-    // },
-    // }
+fn main() {
+    let inp = include_str!("../data/puzzle_input.txt");
+    let mut card_set = parse_card_set(inp).unwrap().1;
+    add_all_duplicates(&mut card_set);
+    println!("{}", card_set.len());
 }
 
-fn calculate_duplicates(card_to_calc: Vec<Card>, full_cards: &Vec<Card>) -> Vec<Card> {
-    let new_cards = vec![];
-    card_to_calc.iter().map(|card| {
-        let id = card.id() as usize;
-        for i in id..card.winning_numbers_count() {
-            let card_to_copy = full_cards.get(i - 1).unwrap();
+fn add_all_duplicates(inp: &mut Vec<Card>) {
+    loop {
+        let mut cards_to_add = vec![];
+        let vec_copy = inp.clone();
+
+        let need_dup_check = inp.iter().filter(|card| !card.already_calculated_duplicates()).count();
+        // dbg!(need_dup_check);
+        if need_dup_check == 0 {
+            break;
         }
-    });
-    new_cards
+        let _: Vec<_> = inp
+            .iter_mut()
+            .filter(|card| !card.already_calculated_duplicates())
+            .map(|card| {
+                let id = card.id() as usize;
+                card.set_has_calculated_duplicates();
+                let winning_numbers_count = card.winning_numbers_count();
+                for i in id..=id + winning_numbers_count - 1 {
+                    let card_to_copy = vec_copy.get(i).unwrap();
+                    cards_to_add.push(card_to_copy.clone());
+                }
+            })
+            .collect();
+        let _: Vec<_> = cards_to_add
+            .iter()
+            .map(|card| inp.push(card.clone()))
+            .collect();
+        // dbg!(i, &inp);
+    }
 }
 
 #[cfg(test)]
@@ -36,8 +46,8 @@ mod tests {
     #[test]
     fn test_sample_set() {
         let inp = include_str!("../data/sample_input.txt");
-        let inp = parse_card_set(inp).unwrap().1;
-        let actual = add_all_duplicates(inp);
-        assert_eq!(actual.len(), 30);
+        let mut inp = parse_card_set(inp).unwrap().1;
+        add_all_duplicates(&mut inp);
+        assert_eq!(inp.len(), 30);
     }
 }

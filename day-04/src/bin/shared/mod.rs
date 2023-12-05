@@ -6,7 +6,7 @@ use nom::{
     IResult,
 };
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq)]
 pub struct Card {
     id: u32,
     winning_set: Vec<u32>,
@@ -14,6 +14,16 @@ pub struct Card {
     has_calculated_duplicates: bool,
 }
 
+impl Clone for Card {
+    fn clone(&self) -> Self {
+        Self {
+            id: self.id.clone(),
+            winning_set: self.winning_set.clone(),
+            your_set: self.your_set.clone(),
+            has_calculated_duplicates: false,
+        }
+    }
+}
 impl Card {
     fn new(id: u32, winning_set: Vec<u32>, your_set: Vec<u32>) -> Self {
         Self {
