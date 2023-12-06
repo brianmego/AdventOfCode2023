@@ -44,6 +44,16 @@ impl From<&str> for ItemType {
 }
 type Seed = usize;
 
+#[derive(Debug, PartialEq, Clone)]
+pub struct SeedRange {
+    min_id: usize,
+    range: usize,
+}
+
+impl SeedRange {
+    pub fn new(min_id: usize, range: usize) -> Self { Self { min_id, range } }
+}
+
 pub struct Almanac {
     seeds: Vec<Seed>,
     converters: Vec<Converter>,
@@ -72,6 +82,33 @@ impl Almanac {
     }
     pub fn seeds(&self) -> Vec<Seed> {
         self.seeds.clone()
+    }
+
+    pub fn seeds_as_range(&self) -> Vec<SeedRange> {
+        self
+            .seeds
+            .chunks_exact(2)
+            .map(|chunk| {
+                let start = chunk[0];
+                let range = chunk[1];
+                SeedRange::new(start, range)
+            })
+            .collect()
+    }
+
+    pub fn get_lowest_seed_location(&self, seeds: Vec<Seed>) -> usize {
+        seeds
+            .iter()
+            .map(|seed| self.convert(&ItemType::Seed, &ItemType::Location, *seed))
+            .min()
+            .unwrap()
+    }
+    pub fn get_lowest_seed_location_by_range(&self, seeds: Vec<SeedRange>) -> usize {
+        seeds
+            .iter()
+            .map(|seedrange| self.convert(&ItemType::Seed, &ItemType::Location, seedrange.min_id))
+            .min()
+            .unwrap()
     }
 }
 
@@ -185,4 +222,20 @@ mod tests {
         let actual = Almanac::from(inp);
         assert_eq!(actual.convert(&from_type, &to_type, from_id), exp);
     }
+
+    #[test]
+    fn test_get_lowest_seed_location() {
+        let inp = include_str!("../../data/sample_input.txt");
+        let almanac = Almanac::from(inp);
+        let actual = almanac.get_lowest_seed_location(almanac.seeds());
+        assert_eq!(actual, 35);
+    }
+
+    // #[test]
+    // fn test_get_lowest_seed_location_seed_range() {
+    //     let inp = include_str!("../../data/sample_input.txt");
+    //     let almanac = Almanac::from(inp);
+    //     let actual = almanac.get_lowest_seed_location_by_range(almanac.seeds_as_range());
+    //     assert_eq!(actual, 46);
+    // }
 }
