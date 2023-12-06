@@ -46,9 +46,6 @@ fn margin_of_error(races: Vec<Race>) -> usize {
         .product()
 }
 fn winning_strategies(time: usize, record_distance: usize) -> usize {
-    calculate_distance(1, time);
-    calculate_distance(2, time);
-    calculate_distance(3, time);
     (1..time)
         .filter(|speed| calculate_distance(*speed, time) > record_distance)
         .count()
