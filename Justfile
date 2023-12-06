@@ -26,7 +26,8 @@ create DAY:
     touch bin/shared/mod.rs && \
     touch data/sample_input.txt && \
     touch data/puzzle_input.txt && \
-    touch bin/part1.rs
+    touch bin/part1.rs && \
+    cargo add test-case --dev
     cp templates/main.rs day-{{DAY}}/src/bin/part1.rs
     cp templates/main.rs day-{{DAY}}/src/bin/part2.rs
 
