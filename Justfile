@@ -10,6 +10,11 @@ run DAY PART:
     cd day-{{DAY}} && \
     cargo run --bin part{{PART}}
 
+time DAY PART:
+    cd day-{{DAY}} && \
+    cargo build --release && \
+    hyperfine -N target/release/part{{PART}}
+
 test DAY:
     cd day-{{DAY}} && \
     cargo test
