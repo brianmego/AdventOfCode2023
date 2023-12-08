@@ -42,14 +42,15 @@ fn parse_directions(inp: &str) -> IResult<&str, Directions> {
 
 pub struct Map<'a> {
     directions: Directions,
-    database: HashMap<&'a str, Coordinate<'a>>
+    database: HashMap<&'a str, Coordinate<'a>>,
 }
-
 
 impl<'a> Map<'a> {
     fn new(directions: Directions, coordinates: Vec<Coordinate<'a>>) -> Self {
         let mut database = HashMap::new();
-        coordinates.iter().for_each(|c| {database.insert(c.loc, c.clone());});
+        coordinates.iter().for_each(|c| {
+            database.insert(c.loc, c.clone());
+        });
         Self {
             directions,
             database,
@@ -64,11 +65,17 @@ impl<'a> Map<'a> {
         let mut current_coordinate = self.search("AAA");
         let mut steps = 0;
         while current_coordinate.loc != desired {
-            self.directions.iter().for_each(|c| {match c {
-                'L' => {current_coordinate = self.search(current_coordinate.left); steps += 1},
-                'R' => {current_coordinate = self.search(current_coordinate.right); steps += 1},
-                _ => unreachable!()
-            }});
+            self.directions.iter().for_each(|c| match c {
+                'L' => {
+                    current_coordinate = self.search(current_coordinate.left);
+                    steps += 1
+                }
+                'R' => {
+                    current_coordinate = self.search(current_coordinate.right);
+                    steps += 1
+                }
+                _ => unreachable!(),
+            });
         }
         steps
     }
