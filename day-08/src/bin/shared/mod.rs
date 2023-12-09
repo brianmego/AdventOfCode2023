@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use nom::{
     bytes::complete::tag,
-    character::complete::{alpha1, newline, one_of},
+    character::complete::{alphanumeric1, newline, one_of},
     combinator::map,
     multi::many1,
     sequence::{separated_pair, terminated, tuple},
@@ -26,9 +26,9 @@ impl<'a> Coordinate<'a> {
 fn parse_coordinate(inp: &str) -> IResult<&str, Coordinate> {
     let (inp, coordinate): (&str, Coordinate) = map(
         separated_pair(
-            alpha1,
+            alphanumeric1,
             tag(" = ("),
-            terminated(tuple((alpha1, tag(", "), alpha1)), tag(")")),
+            terminated(tuple((alphanumeric1, tag(", "), alphanumeric1)), tag(")")),
         ),
         |(loc, (left, _, right))| Coordinate::new(loc, left, right),
     )(inp)?;
@@ -68,16 +68,69 @@ impl<'a> Map<'a> {
             self.directions.iter().for_each(|c| match c {
                 'L' => {
                     current_coordinate = self.search(current_coordinate.left);
-                    steps += 1
                 }
                 'R' => {
                     current_coordinate = self.search(current_coordinate.right);
-                    steps += 1
                 }
                 _ => unreachable!(),
             });
+            steps += self.directions.len();
         }
         steps
+    }
+
+    pub fn traverse_in_parallel(&self, desired_start: char, desired_ending: char) -> usize {
+        let mut current_coordinates: Vec<&Coordinate> = self
+            .database
+            .iter()
+            .filter(|(k, _)| k.ends_with(desired_start))
+            .map(|(_, v)| v)
+            .collect();
+        let mut steps = 0;
+        let mut runs = 0;
+        let mut answer = 0;
+        // dbg!(&current_coordinates);
+        loop {
+            self.directions.iter().for_each(|c| {
+                let mut new_coords = vec![];
+                let new: Vec<_> = current_coordinates
+                    .iter()
+                    .map(|coord| {
+                        let mut current_coordinate = self.search(coord.loc);
+                        match c {
+                            'L' => {
+                                current_coordinate = self.search(current_coordinate.left);
+                            }
+                            'R' => {
+                                current_coordinate = self.search(current_coordinate.right);
+                            }
+                            _ => unreachable!(),
+                        };
+                        new_coords.push(current_coordinate);
+                    })
+                    .collect();
+                current_coordinates = new_coords;
+
+                steps += 1;
+
+                // dbg!(c, &current_coordinates);
+                // if steps == 2 {
+                //     panic!();
+                // }
+                // if steps % 1000 == 0 {
+                //     dbg!(steps);
+                // }
+                let finished = current_coordinates
+                    .iter()
+                    .filter(|c| c.loc.ends_with(desired_ending));
+                if finished.count() == current_coordinates.len() {
+                    answer = steps;
+                }
+            });
+            if answer != 0 {
+                return answer;
+            }
+        }
     }
 }
 
@@ -121,5 +174,12 @@ mod tests {
         let map = parse_map(inp).unwrap().1;
         assert_eq!(map.search("BBB"), &Coordinate::new("BBB", "AAA", "ZZZ"));
         assert_eq!(map.traverse_steps("ZZZ"), 6)
+    }
+
+    #[test]
+    fn test_traverse_in_parallel() {
+        let inp = include_str!("../../data/sample_input_2.txt");
+        let map = parse_map(inp).unwrap().1;
+        assert_eq!(map.traverse_in_parallel('A', 'Z'), 6);
     }
 }
