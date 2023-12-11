@@ -33,7 +33,8 @@ create DAY:
     touch data/puzzle_input.txt && \
     touch bin/part1.rs && \
     cargo add test-case --dev && \
-    cargo add nom
+    cargo add nom && \
+    rm main.rs
     cp templates/main.rs day-{{DAY}}/src/bin/part1.rs
     cp templates/main.rs day-{{DAY}}/src/bin/part2.rs
 
