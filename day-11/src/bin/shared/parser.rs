@@ -13,7 +13,7 @@ fn parse_row(inp: &str) -> IResult<&str, Row> {
     })(inp)
 }
 
-pub fn parse_galaxy(inp: &str) -> IResult<&str, Universe> {
+pub fn parse_universe(inp: &str) -> IResult<&str, Universe> {
     map(many1(terminated(parse_row, newline)), |rows| {
         Universe::new(rows)
     })(inp)
@@ -36,7 +36,7 @@ mod tests {
     #[test]
     fn test_parse_universe() {
         let inp = include_str!("../../data/sample_input.txt");
-        let universe = parse_galaxy(inp).unwrap().1;
+        let universe = parse_universe(inp).unwrap().1;
         assert_eq!(universe.rows.len(), 10);
         assert_eq!(universe.get_tile(Loc::new(0, 2)).unwrap().tile, Tile::Galaxy);
         assert_eq!(universe.get_tile(Loc::new(0, 0)).unwrap().tile, Tile::Space);
