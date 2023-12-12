@@ -97,14 +97,11 @@ impl Universe {
     fn get_tile(&self, loc: Loc) -> Option<&NetworkedTile> {
         self.rows.get(loc.y as usize)?.0.get(loc.x as usize)
     }
+
     pub fn get_all_galaxies(&self) -> Vec<&NetworkedTile> {
-        let mut galaxies = vec![];
-        for row in &self.rows {
-            let galaxies_in_row: Vec<&NetworkedTile> =
-                row.0.iter().filter(|nt| nt.tile == Tile::Galaxy).collect();
-            galaxies.extend(galaxies_in_row);
-        }
-        galaxies
+        self.rows.iter().flat_map(|row| {
+            row.0.iter().filter(|nt| nt.tile == Tile::Galaxy).collect::<Vec<_>>()
+        }).collect()
     }
 
     pub fn expand(&mut self, multiple: usize) {

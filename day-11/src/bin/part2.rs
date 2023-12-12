@@ -32,7 +32,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_get_all_galaxy_distances() {
+    fn test_get_all_galaxy_distances_10() {
         let inp = include_str!("../data/sample_input.txt");
         let mut universe = parse_universe(inp).unwrap().1;
         universe.expand(10);
