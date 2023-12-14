@@ -17,6 +17,29 @@ impl Display for TileType {
     }
 }
 
+#[derive(Debug)]
+struct BadTileTypeError;
+
+impl TryFrom<&char> for TileType {
+    type Error = BadTileTypeError;
+
+    fn try_from(value: &char) -> Result<Self, Self::Error> {
+        match value {
+            '.' => Ok(Self::Ash),
+            '#' => Ok(Self::Rocks),
+            _ => unreachable!(),
+        }
+    }
+}
+impl ParseableCharacters for TileType {
+    fn valid_chars() -> Vec<char> {
+        vec!['#', '.']
+    }
+}
+trait ParseableCharacters {
+    fn valid_chars() -> Vec<char>;
+}
+
 #[derive(Debug, PartialEq, Copy, Clone)]
 struct Loc {
     x: usize,
@@ -83,21 +106,6 @@ impl Display for Tile {
     }
 }
 
-#[derive(Debug)]
-struct BadTileTypeError;
-
-impl TryFrom<&char> for TileType {
-    type Error = BadTileTypeError;
-
-    fn try_from(value: &char) -> Result<Self, Self::Error> {
-        match value {
-            '.' => Ok(Self::Ash),
-            '#' => Ok(Self::Rocks),
-            _ => unreachable!(),
-        }
-    }
-}
-
 type Valley = Collection;
 
 impl Valley {
@@ -109,7 +117,7 @@ impl Valley {
                 true => possible_symmetry_cols.push(i),
                 false => (),
             }
-        };
+        }
         'a: for col in possible_symmetry_cols.iter() {
             let left_pointer = *col;
             let right_pointer = *col + 1;
@@ -123,7 +131,7 @@ impl Valley {
                     continue 'a;
                 }
                 step += 1;
-            };
+            }
             return Some(col + 1);
         }
         None
@@ -136,7 +144,7 @@ impl Valley {
                 true => possible_symmetry_rows.push(i),
                 false => (),
             }
-        };
+        }
         'a: for row in possible_symmetry_rows.iter() {
             let top_pointer = *row;
             let bottom_pointer = *row + 1;
@@ -150,7 +158,7 @@ impl Valley {
                     continue 'a;
                 }
                 step += 1;
-            };
+            }
             return Some(row + 1);
         }
         None

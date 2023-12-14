@@ -1,23 +1,21 @@
 use crate::shared::{Collection, CollectionGroup, Loc, Tile, TileType};
+use itertools::Itertools;
 use nom::{
     character::complete::{newline, one_of},
     combinator::map,
-    multi::{many1, many0},
+    multi::{many0, many1},
     sequence::terminated,
     IResult,
 };
 
-fn parse_tile_type(inp: &str) -> IResult<&str, TileType> {
-    parse_tile_type_generic(inp, "#.")
-}
+use super::ParseableCharacters;
 
-fn parse_tile_type_generic<'a>(
-    inp: &'a str,
-    valid_tile_chars: &'a str,
-) -> IResult<&'a str, TileType> {
-    map(one_of(valid_tile_chars), |c| {
+fn parse_tile_type(inp: &str) -> IResult<&str, TileType> {
+    let valid_tile_chars = TileType::valid_chars().iter().join("");
+    let res = map(one_of(valid_tile_chars.as_str()), |c| {
         TileType::try_from(&c).unwrap()
-    })(inp)
+    })(inp);
+    res
 }
 
 pub fn parse_collection(inp: &str) -> IResult<&str, Collection> {
