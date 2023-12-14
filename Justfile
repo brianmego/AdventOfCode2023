@@ -23,6 +23,10 @@ keeptesting DAY:
     cd day-{{DAY}} && \
     cargo watch -x test
 
+testutils:
+    cd aoc-utils && \
+    cargo watch -x test
+
 create DAY:
     cargo new day-{{DAY}} --vcs none
     cd day-{{DAY}}/src && \
