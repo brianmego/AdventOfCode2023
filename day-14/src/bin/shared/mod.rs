@@ -27,7 +27,7 @@ impl ParseableCharacters for ParabolicFieldTile {
 
 enum Direction {
     Positive,
-    Negative
+    Negative,
 }
 
 pub struct ParabolicFieldCollection(pub Collection<ParabolicFieldTile>);
@@ -35,26 +35,81 @@ impl ParabolicFieldCollection {
     pub fn tilt_north(&self) -> Vec<Vec<ParabolicFieldTile>> {
         let mut tilted = vec![];
         for i in 0..self.0.count_columns() {
-            tilted.push(ParabolicFieldCollection::tilt(self.0.get_column(i)));
+            tilted.push(ParabolicFieldCollection::tilt(
+                self.0.get_column(i),
+                Direction::Negative,
+            ));
+        }
+        tilted
+    }
+    pub fn tilt_south(&self) -> Vec<Vec<ParabolicFieldTile>> {
+        let mut tilted = vec![];
+        for i in 0..self.0.count_columns() {
+            tilted.push(ParabolicFieldCollection::tilt(
+                self.0.get_column(i),
+                Direction::Positive,
+            ));
+        }
+        tilted
+    }
+    pub fn tilt_west(&self) -> Vec<Vec<ParabolicFieldTile>> {
+        let mut tilted = vec![];
+        for i in 0..self.0.count_rows() {
+            tilted.push(ParabolicFieldCollection::tilt(
+                self.0.get_row(i),
+                Direction::Negative,
+            ));
+        }
+        tilted
+    }
+    pub fn tilt_east(&self) -> Vec<Vec<ParabolicFieldTile>> {
+        let mut tilted = vec![];
+        for i in 0..self.0.count_rows() {
+            tilted.push(ParabolicFieldCollection::tilt(
+                self.0.get_row(i),
+                Direction::Positive,
+            ));
         }
         tilted
     }
 
-    fn tilt(row_or_col: Column<ParabolicFieldTile>) -> Vec<ParabolicFieldTile> {
+    fn tilt(
+        row_or_col: Column<ParabolicFieldTile>,
+        direction: Direction,
+    ) -> Vec<ParabolicFieldTile> {
         let mut data_grouped: Vec<ParabolicFieldTile> = vec![];
         let mut empties = 0;
-        for tile in row_or_col {
-            match tile.tile_type() {
-                ParabolicFieldTile::Round => data_grouped.push(ParabolicFieldTile::Round),
-                ParabolicFieldTile::Cube => {
-                    data_grouped.extend(vec![ParabolicFieldTile::Empty; empties]);
-                    data_grouped.push(ParabolicFieldTile::Cube);
-                    empties = 0;
+        match direction {
+            Direction::Positive => {
+                for tile in row_or_col.into_iter().rev() {
+                    match tile.tile_type() {
+                        ParabolicFieldTile::Round => data_grouped.push(ParabolicFieldTile::Round),
+                        ParabolicFieldTile::Cube => {
+                            data_grouped.extend(vec![ParabolicFieldTile::Empty; empties]);
+                            data_grouped.push(ParabolicFieldTile::Cube);
+                            empties = 0;
+                        }
+                        ParabolicFieldTile::Empty => empties += 1,
+                    }
                 }
-                ParabolicFieldTile::Empty => empties += 1,
+                data_grouped.extend(vec![ParabolicFieldTile::Empty; empties]);
+                data_grouped.reverse();
+            },
+            Direction::Negative => {
+                for tile in row_or_col {
+                    match tile.tile_type() {
+                        ParabolicFieldTile::Round => data_grouped.push(ParabolicFieldTile::Round),
+                        ParabolicFieldTile::Cube => {
+                            data_grouped.extend(vec![ParabolicFieldTile::Empty; empties]);
+                            data_grouped.push(ParabolicFieldTile::Cube);
+                            empties = 0;
+                        }
+                        ParabolicFieldTile::Empty => empties += 1,
+                    }
+                }
+                data_grouped.extend(vec![ParabolicFieldTile::Empty; empties]);
             }
         };
-        data_grouped.extend(vec![ParabolicFieldTile::Empty; empties]);
         data_grouped
     }
 }
@@ -82,10 +137,10 @@ mod tests {
     }
 
     #[test]
-    fn test_tilt_row() {
+    fn test_tilt_row_negative() {
         let inp = include_str!("../../data/sample_input.txt");
         let collection: Collection<ParabolicFieldTile> = parse_collection(inp).unwrap().1;
-        let actual = ParabolicFieldCollection::tilt(collection.get_column(2));
+        let actual = ParabolicFieldCollection::tilt(collection.get_column(2), Direction::Negative);
         let expected = vec![
             ParabolicFieldTile::Round,
             ParabolicFieldTile::Empty,
@@ -97,6 +152,26 @@ mod tests {
             ParabolicFieldTile::Round,
             ParabolicFieldTile::Empty,
             ParabolicFieldTile::Empty,
+        ];
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_tilt_row_positive() {
+        let inp = include_str!("../../data/sample_input.txt");
+        let collection: Collection<ParabolicFieldTile> = parse_collection(inp).unwrap().1;
+        let actual = ParabolicFieldCollection::tilt(collection.get_column(2), Direction::Positive);
+        let expected = vec![
+            ParabolicFieldTile::Empty,
+            ParabolicFieldTile::Empty,
+            ParabolicFieldTile::Empty,
+            ParabolicFieldTile::Empty,
+            ParabolicFieldTile::Round,
+            ParabolicFieldTile::Cube,
+            ParabolicFieldTile::Empty,
+            ParabolicFieldTile::Empty,
+            ParabolicFieldTile::Round,
+            ParabolicFieldTile::Round,
         ];
         assert_eq!(actual, expected);
     }
