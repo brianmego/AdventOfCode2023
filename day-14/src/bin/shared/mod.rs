@@ -1,7 +1,8 @@
-use aoc_utils::{ParseableCharacters, BadTileTypeError};
+use aoc_utils::{BadTileTypeError, Collection, Column, ParseableCharacters, Row, Tile};
+use itertools::Itertools;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
-enum ParabolicFieldTile {
+pub enum ParabolicFieldTile {
     Round,
     Cube,
     Empty,
@@ -24,10 +25,44 @@ impl ParseableCharacters for ParabolicFieldTile {
     }
 }
 
+enum Direction {
+    Positive,
+    Negative
+}
+
+pub struct ParabolicFieldCollection(pub Collection<ParabolicFieldTile>);
+impl ParabolicFieldCollection {
+    pub fn tilt_north(&self) -> Vec<Vec<ParabolicFieldTile>> {
+        let mut tilted = vec![];
+        for i in 0..self.0.count_columns() {
+            tilted.push(ParabolicFieldCollection::tilt(self.0.get_column(i)));
+        }
+        tilted
+    }
+
+    fn tilt(row_or_col: Column<ParabolicFieldTile>) -> Vec<ParabolicFieldTile> {
+        let mut data_grouped: Vec<ParabolicFieldTile> = vec![];
+        let mut empties = 0;
+        for tile in row_or_col {
+            match tile.tile_type() {
+                ParabolicFieldTile::Round => data_grouped.push(ParabolicFieldTile::Round),
+                ParabolicFieldTile::Cube => {
+                    data_grouped.extend(vec![ParabolicFieldTile::Empty; empties]);
+                    data_grouped.push(ParabolicFieldTile::Cube);
+                    empties = 0;
+                }
+                ParabolicFieldTile::Empty => empties += 1,
+            }
+        };
+        data_grouped.extend(vec![ParabolicFieldTile::Empty; empties]);
+        data_grouped
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc_utils::{parse_tile_type, parse_collection, Collection};
+    use aoc_utils::{parse_collection, parse_tile_type};
     use nom::IResult;
     use test_case::test_case;
 
@@ -44,5 +79,25 @@ mod tests {
         let inp = include_str!("../../data/sample_input.txt");
         let actual: Collection<ParabolicFieldTile> = parse_collection(inp).unwrap().1;
         assert_eq!(actual.len(), 100);
+    }
+
+    #[test]
+    fn test_tilt_row() {
+        let inp = include_str!("../../data/sample_input.txt");
+        let collection: Collection<ParabolicFieldTile> = parse_collection(inp).unwrap().1;
+        let actual = ParabolicFieldCollection::tilt(collection.get_column(2));
+        let expected = vec![
+            ParabolicFieldTile::Round,
+            ParabolicFieldTile::Empty,
+            ParabolicFieldTile::Empty,
+            ParabolicFieldTile::Empty,
+            ParabolicFieldTile::Empty,
+            ParabolicFieldTile::Cube,
+            ParabolicFieldTile::Round,
+            ParabolicFieldTile::Round,
+            ParabolicFieldTile::Empty,
+            ParabolicFieldTile::Empty,
+        ];
+        assert_eq!(actual, expected);
     }
 }

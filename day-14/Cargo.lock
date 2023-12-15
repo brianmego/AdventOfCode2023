@@ -21,6 +21,7 @@ name = "day-14"
 version = "0.1.0"
 dependencies = [
  "aoc-utils",
+ "itertools",
  "nom",
  "test-case",
 ]

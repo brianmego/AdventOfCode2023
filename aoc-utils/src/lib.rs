@@ -64,7 +64,17 @@ impl Loc {
 }
 
 #[derive(PartialEq, Debug)]
-struct Row<'a, T>(Vec<&'a Tile<T>>);
+pub struct Row<'a, T>(Vec<&'a Tile<T>>);
+impl<'a, T> IntoIterator for Row<'a, T> {
+    type Item = &'a Tile<T>;
+
+    type IntoIter= std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+pub type Column<'a, T> = Row<'a, T>;
 impl<T> Display for Row<'_, T>
 where
     T: Display,
@@ -83,7 +93,7 @@ impl<T> Collection<T> {
     pub fn get_row(&self, row_num: usize) -> Row<T> {
         Row(self.0.iter().filter(|t| t.loc.y == row_num).collect())
     }
-    pub fn get_column(&self, col_num: usize) -> Row<T> {
+    pub fn get_column(&self, col_num: usize) -> Column<T> {
         Row(self.0.iter().filter(|t| t.loc.x == col_num).collect())
     }
     pub fn count_rows(&self) -> usize {
@@ -99,9 +109,14 @@ impl<T> Collection<T> {
 pub type CollectionGroup<T> = Vec<Collection<T>>;
 
 #[derive(Debug, Copy, Clone)]
-struct Tile<T> {
+pub struct Tile<T> {
     tile_type: T,
     loc: Loc,
+}
+impl<T> Tile<T> {
+    pub fn tile_type(&self) -> &T {
+        &self.tile_type
+    }
 }
 impl<T> PartialEq for Tile<T>
 where
