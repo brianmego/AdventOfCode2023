@@ -51,15 +51,23 @@ pub trait ParseableCharacters {
     fn valid_chars() -> Vec<char>;
 }
 
-#[derive(Debug, PartialEq, Copy, Clone)]
-struct Loc {
+#[derive(Debug, PartialEq, Copy, Clone, PartialOrd, Eq, Ord)]
+pub struct Loc {
     x: usize,
     y: usize,
 }
 
 impl Loc {
-    fn new(x: usize, y: usize) -> Self {
+    pub fn new(x: usize, y: usize) -> Self {
         Self { x, y }
+    }
+    pub fn get_neighbor(&self, direction: Direction) -> Option<Self> {
+        Some(match direction {
+            Direction::North => Self::new(self.x, self.y.checked_sub(1)?),
+            Direction::East => Self::new(self.x.checked_add(1)?, self.y),
+            Direction::South => Self::new(self.x, self.y.checked_add(1)?),
+            Direction::West => Self::new(self.x.checked_sub(1)?, self.y),
+        })
     }
 }
 
@@ -68,7 +76,7 @@ pub struct Row<'a, T>(Vec<&'a Tile<T>>);
 impl<'a, T> IntoIterator for Row<'a, T> {
     type Item = &'a Tile<T>;
 
-    type IntoIter= std::vec::IntoIter<Self::Item>;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
@@ -84,7 +92,7 @@ where
         f.write_str(&out)
     }
 }
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, PartialEq)]
 pub struct Collection<T>(Vec<Tile<T>>);
 impl<T> Collection<T> {
     fn push(&mut self, tile: Tile<T>) {
@@ -105,10 +113,46 @@ impl<T> Collection<T> {
     pub fn len(&self) -> usize {
         self.0.len()
     }
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+    pub fn tiles(&self) -> &Vec<Tile<T>> {
+        &self.0
+    }
+    pub fn get_tile(&self, loc: Loc) -> Option<&Tile<T>> {
+        self.get_row(loc.y).0.get(loc.x).copied()
+    }
 }
 pub type CollectionGroup<T> = Vec<Collection<T>>;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum Direction {
+    North,
+    East,
+    South,
+    West,
+}
+impl Direction {
+    pub fn rotate_clockwise(&self) -> Self {
+        match self {
+            Direction::North => Self::East,
+            Direction::East => Self::South,
+            Direction::South => Self::West,
+            Direction::West => Self::North,
+        }
+    }
+
+    pub fn rotate_counterclockwise(&self) -> Self {
+        match self {
+            Direction::North => Self::West,
+            Direction::East => Self::North,
+            Direction::South => Self::East,
+            Direction::West => Self::South,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, Ord, Eq, PartialOrd)]
 pub struct Tile<T> {
     tile_type: T,
     loc: Loc,
