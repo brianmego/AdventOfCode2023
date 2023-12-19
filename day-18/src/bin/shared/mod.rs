@@ -1,14 +1,14 @@
 use aoc_utils::{Direction, Loc};
 use nom::{
-    bytes::complete::{tag, take_while_m_n},
-    character::complete::{digit1, newline, one_of},
+    bytes::complete::{tag, take_until, take_while_m_n},
+    character::complete::{digit1, hex_digit1, newline, one_of},
     combinator::{map, map_res},
     multi::many1,
     sequence::{delimited, terminated, tuple},
     IResult,
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default)]
 pub struct Color {
     pub red: u8,
     pub green: u8,
@@ -40,8 +40,9 @@ impl Polygon {
         self.0.len()
     }
 
-    pub fn get_area(&self) -> f32 {
-        let mut sum = 0;
+    /// Get area using the Shoelace formula (https://en.wikipedia.org/wiki/Shoelace_formula)
+    pub fn get_area(&self) -> usize {
+        let mut sum: isize = 0;
         for i in 0..self.len() - 1 {
             let point_1 = self.0[i];
             let point_2 = self.0[i + 1];
@@ -50,7 +51,7 @@ impl Polygon {
         let first = self.0[0];
         let last = self.0.last().unwrap();
         sum += (last.get_x() * first.get_y()) - (first.get_x() * last.get_y());
-        sum as f32 / 2.0
+        (sum / 2) as usize
     }
 }
 impl std::fmt::Debug for Polygon {
@@ -87,69 +88,30 @@ impl InstructionSet {
         self.0.len()
     }
 
+    pub fn get_perimiter(&self) -> usize {
+        self.0.iter().map(|i| i.count).sum()
+    }
+
     pub fn draw_polygon(&self) -> Polygon {
         let mut instructions = vec![];
         let mut current_loc = Loc::new(0, 0);
         self.0.iter().for_each(|i| {
-            for _ in 0..i.count {
-                current_loc = current_loc.get_neighbor(i.direction).unwrap();
-                instructions.push(current_loc);
-            }
+            current_loc = current_loc.get_nearby(i.direction, i.count as isize);
+            instructions.push(current_loc);
         });
         Polygon(instructions)
-    }
-    pub fn fill_polygon(&self, polygon: Polygon) -> Polygon {
-        let mut min_x = polygon.0[0].get_x();
-        let mut min_y = polygon.0[0].get_y();
-        let mut max_x = polygon.0[0].get_x();
-        let mut max_y = polygon.0[0].get_y();
-        for loc in polygon.0.iter() {
-            min_x = loc.get_x().min(min_x);
-            min_y = loc.get_y().min(min_y);
-            max_x = loc.get_x().max(max_x);
-            max_y = loc.get_y().max(max_y);
-        }
-        let mut inside_points = vec![];
-        for x in min_x..=max_x {
-            for y in min_y..=max_y {
-                let point = Loc::new(x, y);
-                let all_this_row: Vec<_> = polygon.0.iter().filter(|l| l.get_y() == y).collect();
-                let all_this_column: Vec<_> = polygon.0.iter().filter(|l| l.get_x() == x).collect();
-                let horizontal_line = Loc::new(max_x + 1, y);
-                let horizontal_line_2 = Loc::new(min_x - 1, y);
-                let vertical_line = Loc::new(x, max_y + 1);
-                let vertical_line_2 = Loc::new(x, min_y - 1);
-                let line_1 = point.connect_with_line(horizontal_line);
-                let line_2 = point.connect_with_line(horizontal_line_2);
-                let line_3 = point.connect_with_line(vertical_line);
-                let line_4 = point.connect_with_line(vertical_line_2);
-                let intersections_1 = line_1.iter().filter(|p| all_this_row.contains(p));
-                let intersections_2 = line_2.iter().filter(|p| all_this_row.contains(p));
-                let intersections_3 = line_3.iter().filter(|p| all_this_column.contains(p));
-                let intersections_4 = line_4.iter().filter(|p| all_this_column.contains(p));
-                match intersections_1.count() == all_this_row.len()
-                    || intersections_2.count() == all_this_row.len()
-                    || intersections_3.count() == all_this_column.len()
-                    || intersections_4.count() == all_this_column.len()
-                {
-                    true => {}
-                    false => inside_points.push(point),
-                }
-            }
-        }
-        Polygon(inside_points)
     }
 }
 
 #[derive(Debug, PartialEq)]
 struct Instruction {
     direction: Direction,
-    count: u8,
+    count: usize,
     color: Color,
 }
 
 impl Instruction {
-    fn new(direction: Direction, count: u8, color: Color) -> Self {
+    fn new(direction: Direction, count: usize, color: Color) -> Self {
         Self {
             direction,
             count,
@@ -173,16 +135,43 @@ fn parse_instruction(inp: &str) -> IResult<&str, Instruction> {
                 'R' => Direction::East,
                 _ => unreachable!(),
             };
-            Instruction::new(direction, count.parse::<u8>().unwrap(), color)
+            Instruction::new(direction, count.parse::<usize>().unwrap(), color)
         },
     )(inp)?;
+    Ok((inp, instruction))
+}
+
+fn parse_true_instruction(inp: &str) -> IResult<&str, Instruction> {
+    let (inp, (_, _, hex)) = tuple((
+        terminated(one_of("UDLR"), tag(" ")),
+        terminated(digit1, tag(" ")),
+        delimited(tag("(#"), hex_digit1, tag(")")),
+    ))(inp)?;
+    // |(direction, count, hex)| {
+    let direction = match hex.chars().last().unwrap() {
+        '0' => Direction::East,
+        '1' => Direction::South,
+        '2' => Direction::West,
+        '3' => Direction::North,
+        _ => unreachable!(),
+    };
+
+    let count = usize::from_str_radix(&hex[..5], 16).unwrap();
+    let instruction = Instruction::new(direction, count, Color::default());
     Ok((inp, instruction))
 }
 
 pub fn parse_instruction_set(inp: &str) -> IResult<&str, InstructionSet> {
     map(
         many1(terminated(parse_instruction, newline)),
-        |instructions| InstructionSet(instructions),
+        InstructionSet,
+    )(inp)
+}
+
+pub fn parse_true_instruction_set(inp: &str) -> IResult<&str, InstructionSet> {
+    map(
+        many1(terminated(parse_true_instruction, newline)),
+        InstructionSet,
     )(inp)
 }
 
@@ -203,24 +192,29 @@ mod tests {
         let inp = include_str!("../../data/sample_input.txt");
         let instruction_set = parse_instruction_set(inp).unwrap().1;
         assert_eq!(instruction_set.0.len(), 14);
-        let actual = instruction_set.draw_polygon();
-        assert_eq!(actual.len(), 38);
     }
 
     #[test]
-    fn test_fill_polygon() {
+    fn test_get_area() {
         let inp = include_str!("../../data/sample_input.txt");
         let instruction_set = parse_instruction_set(inp).unwrap().1;
         assert_eq!(instruction_set.0.len(), 14);
         let outline = instruction_set.draw_polygon();
-        let actual = outline.get_area() as usize + (outline.len() / 2) + 1;
+        let perimiter = instruction_set.get_perimiter();
+        let actual = outline.get_area() + (perimiter / 2) + 1;
         assert_eq!(actual, 62);
     }
 
     #[test]
-    fn get_area() {
-        let inp = vec![Loc::new(1, 6), Loc::new(3, 1), Loc::new(7, 2), Loc::new(4, 4), Loc::new(8, 5)];
-        let actual = Polygon(inp).get_area();
-        assert_eq!(actual, 16.5)
+    fn test_parse_true_instruction() {
+        let inp = "R 6 (#70c710)";
+        let actual = parse_true_instruction(inp);
+        assert_eq!(
+            actual,
+            Ok((
+                "",
+                Instruction::new(Direction::East, 461937, Color::default())
+            ))
+        );
     }
 }

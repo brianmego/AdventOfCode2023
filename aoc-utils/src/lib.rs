@@ -73,6 +73,14 @@ impl Loc {
             Direction::West => Self::new(self.x.checked_sub(1)?, self.y),
         })
     }
+    pub fn get_nearby(&self, direction:Direction, distance: isize) -> Self {
+        match direction {
+            Direction::North => Self::new(self.x, self.y - distance),
+            Direction::East => Self::new(self.x + distance, self.y),
+            Direction::South => Self::new(self.x, self.y + distance),
+            Direction::West => Self::new(self.x - distance, self.y),
+        }
+    }
     pub fn get_x(&self) -> isize {
         self.x
     }
