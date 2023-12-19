@@ -39,6 +39,19 @@ impl Polygon {
     pub fn len(&self) -> usize {
         self.0.len()
     }
+
+    pub fn get_area(&self) -> f32 {
+        let mut sum = 0;
+        for i in 0..self.len() - 1 {
+            let point_1 = self.0[i];
+            let point_2 = self.0[i + 1];
+            sum += (point_1.get_x() * point_2.get_y()) - (point_2.get_x() * point_1.get_y());
+        }
+        let first = self.0[0];
+        let last = self.0.last().unwrap();
+        sum += (last.get_x() * first.get_y()) - (first.get_x() * last.get_y());
+        sum as f32 / 2.0
+    }
 }
 impl std::fmt::Debug for Polygon {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -79,8 +92,8 @@ impl InstructionSet {
         let mut current_loc = Loc::new(0, 0);
         self.0.iter().for_each(|i| {
             for _ in 0..i.count {
-                instructions.push(current_loc);
                 current_loc = current_loc.get_neighbor(i.direction).unwrap();
+                instructions.push(current_loc);
             }
         });
         Polygon(instructions)
@@ -200,10 +213,14 @@ mod tests {
         let instruction_set = parse_instruction_set(inp).unwrap().1;
         assert_eq!(instruction_set.0.len(), 14);
         let outline = instruction_set.draw_polygon();
-        dbg!(&outline);
-        let mut actual = instruction_set.fill_polygon(outline);
-        actual.0.sort();
-        dbg!(&actual);
-        assert_eq!(actual.len(), 62);
+        let actual = outline.get_area() as usize + (outline.len() / 2) + 1;
+        assert_eq!(actual, 62);
+    }
+
+    #[test]
+    fn get_area() {
+        let inp = vec![Loc::new(1, 6), Loc::new(3, 1), Loc::new(7, 2), Loc::new(4, 4), Loc::new(8, 5)];
+        let actual = Polygon(inp).get_area();
+        assert_eq!(actual, 16.5)
     }
 }
