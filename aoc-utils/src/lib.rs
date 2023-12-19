@@ -6,6 +6,7 @@ use nom::{
     sequence::terminated,
     IResult,
 };
+use num::Integer;
 use std::fmt::{Debug, Display};
 
 #[derive(Debug)]
@@ -32,7 +33,10 @@ where
     let mut collection = Collection(vec![]);
     for (row_num, row) in rows.iter().enumerate() {
         for (col_num, tile) in row.iter().enumerate() {
-            collection.push(Tile::new(*tile, Loc::new(col_num, row_num)));
+            collection.push(Tile::new(
+                *tile,
+                Loc::new(col_num as isize, row_num as isize),
+            ));
         }
     }
     Ok((inp, collection))
@@ -53,12 +57,12 @@ pub trait ParseableCharacters {
 
 #[derive(Debug, PartialEq, Copy, Clone, PartialOrd, Eq, Ord)]
 pub struct Loc {
-    x: usize,
-    y: usize,
+    x: isize,
+    y: isize,
 }
 
 impl Loc {
-    pub fn new(x: usize, y: usize) -> Self {
+    pub fn new(x: isize, y: isize) -> Self {
         Self { x, y }
     }
     pub fn get_neighbor(&self, direction: Direction) -> Option<Self> {
@@ -68,6 +72,28 @@ impl Loc {
             Direction::South => Self::new(self.x, self.y.checked_add(1)?),
             Direction::West => Self::new(self.x.checked_sub(1)?, self.y),
         })
+    }
+    pub fn get_x(&self) -> isize {
+        self.x
+    }
+    pub fn get_y(&self) -> isize {
+        self.y
+    }
+    pub fn connect_with_line(&self, other: Loc) -> Vec<Loc> {
+        let mut y_slope = other.y - self.y;
+        let mut x_slope = other.x - self.x;
+        let divisor = x_slope.gcd(&y_slope);
+        x_slope /= divisor;
+        y_slope /= divisor;
+        let mut traveling_point = *self;
+        let mut line_points = vec![];
+        while traveling_point != other {
+            traveling_point.x += x_slope;
+            traveling_point.y += y_slope;
+            line_points.push(traveling_point);
+        }
+        line_points.pop();
+        line_points
     }
 }
 
@@ -98,10 +124,10 @@ impl<T> Collection<T> {
     fn push(&mut self, tile: Tile<T>) {
         self.0.push(tile)
     }
-    pub fn get_row(&self, row_num: usize) -> Row<T> {
+    pub fn get_row(&self, row_num: isize) -> Row<T> {
         Row(self.0.iter().filter(|t| t.loc.y == row_num).collect())
     }
-    pub fn get_column(&self, col_num: usize) -> Column<T> {
+    pub fn get_column(&self, col_num: isize) -> Column<T> {
         Row(self.0.iter().filter(|t| t.loc.x == col_num).collect())
     }
     pub fn count_rows(&self) -> usize {
@@ -120,7 +146,11 @@ impl<T> Collection<T> {
         &self.0
     }
     pub fn get_tile(&self, loc: Loc) -> Option<&Tile<T>> {
-        self.get_row(loc.y).0.get(loc.x).copied()
+        self.get_row(loc.y)
+            .0
+            .iter()
+            .find(|t| t.loc.x == loc.x)
+            .copied()
     }
 }
 pub type CollectionGroup<T> = Vec<Collection<T>>;
@@ -245,5 +275,13 @@ mod tests {
         assert_eq!(unwrapped.0, "");
         assert_eq!(unwrapped.1[0].0.len(), 63);
         assert_eq!(unwrapped.1[1].0.len(), 63);
+    }
+
+    #[test_case((Loc::new(1,1), Loc::new(5, 5)), vec![Loc::new(2, 2), Loc::new(3, 3), Loc::new(4, 4)])]
+    #[test_case((Loc::new(1,1), Loc::new(-2, -2)), vec![Loc::new(0,0), Loc::new(-1, -1)])]
+    #[test_case((Loc::new(1,1), Loc::new(-2, -5)), vec![Loc::new(0, -1), Loc::new(-1, -3)])]
+    fn test_loc_connect_with_line((point_1, point_2): (Loc, Loc), exp: Vec<Loc>) {
+        let actual = point_1.connect_with_line(point_2);
+        assert_eq!(actual, exp);
     }
 }
